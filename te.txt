@@ -1,0 +1,611 @@
+3]
+pairty
+#include <bits/stdc++.h>
+
+using namespace std;
+
+// Calculates the parity bit for the given data
+char calculateParity(const std::string& data, char type) {
+    int one_count = std::count(data.begin(), data.end(), '1');
+    
+    // For even parity, we want an even number of 1s in total.
+    // For odd parity, we want an odd number of 1s in total.
+    if (type == 'e') {
+        return (one_count % 2 == 0) ? '0' : '1';
+    } else {
+        return (one_count % 2 == 0) ? '1' : '0';
+    }
+}
+
+int main() {
+    string data;
+    char parity_type;
+
+    // --- Sender Side ---
+    cout << "Enter binary data: ";
+    cin >> data;
+
+    cout << "Choose parity ('e' for even, 'o' for odd): ";
+    cin >> parity_type;
+
+    if (parity_type != 'e' && parity_type != 'o') {
+        cout << "Invalid parity type selected." << endl;
+        return 1;
+    }
+
+    char parity_bit = calculateParity(data, parity_type);
+    string transmitted_data = data + parity_bit;
+    cout << "Transmitted Data (with parity): " << transmitted_data << endl;
+
+    // --- Receiver Side ---
+    string received_data;
+    cout << "\nEnter received data: ";
+    cin >> received_data;
+
+    if (received_data.length() < 1) {
+        cout << "Invalid received data." << endl;
+        return 1;
+    }
+
+    string received_payload = received_data.substr(0, received_data.length() - 1);
+    char calculated_parity = calculateParity(received_payload, parity_type);
+
+    if (received_data.back() == calculated_parity) {
+        cout << "No error detected. Data is correct." << endl;
+    } else {
+        cout << "Error detected. Data is corrupted." << endl;
+    }
+
+    return 0;
+}
+
+
+crc
+#include <iostream>
+using namespace std;
+
+string divideCRC(string data, const string& gen){
+    for(int i = 0; i <= data.size() - gen.size(); i++)
+        if(data[i] == '1')
+            for(int j = 0; j < gen.size(); j++)
+                data[i+j] = (data[i+j] == gen[j] ? '0' : '1');
+    return data.substr(data.size() - (gen.size() - 1));
+}
+
+int main(){
+    string msg, gen;
+    cout << "Enter data bits: ";
+    cin >> msg;
+    cout << "Enter generator: ";
+    cin >> gen;
+
+
+    // --- Sender Side ---
+    string temp = msg + string(gen.size() - 1, '0');
+    string rem = divideCRC(temp, gen);
+    string code = msg + rem;
+
+    cout << "CRC: " << rem << "\n";
+    cout << "Transmitted codeword: " << code << "\n";
+
+    // --- Receiver Side ---
+    string recv;
+    cout << "Enter received codeword: ";
+    cin >> recv;
+    
+    string r = divideCRC(recv, gen);
+    cout << "Remainder: " << r << "\n";
+
+    bool ok = true;
+    for(char c : r) if(c=='1') ok = false;
+
+    if(ok){
+        cout << "No error\n";
+        cout << "Original data: " 
+             << recv.substr(0, recv.size() - (gen.size() - 1)) << "\n";
+    } else {
+        cout << "Error detected\n";
+    }
+}
+
+hamming code
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    string data;
+    cout << "Enter data bits: ";
+    cin >> data;
+
+    int m = data.size(), r = 0;
+    while ((1 << r) < m + r + 1) r++;
+
+    int n = m + r;
+    vector<int> cw(n + 1, 0);
+
+    // Fill data bits (reverse for 1-based indexing convenience)
+    string d = data;
+    reverse(d.begin(), d.end());
+    for (int i = 1, k = 0; i <= n; i++)
+        if (i & (i - 1)) cw[i] = d[k++] - '0';
+
+    // Compute parity bits
+    for (int p = 0; p < r; p++) {
+        int pos = 1 << p, cnt = 0;
+        for (int i = 1; i <= n; i++)
+            if (i & pos) cnt += cw[i];
+        if (cnt & 1) cw[pos] = 1;
+    }
+
+    // Output transmitted codeword
+    cout << "Transmitted codeword: ";
+    for (int i = n; i >= 1; i--) cout << cw[i];
+    cout << "\n";
+
+    // ---------------- Receiver ---------------- //
+    string recv;
+    cout << "Enter received codeword: ";
+    cin >> recv;
+
+    int nr = recv.size();
+    vector<int> rc(nr + 1, 0);
+    for (int i = 0; i < nr; i++) rc[nr - i] = recv[i] - '0';
+
+    int error = 0;
+    for (int p = 0; (1 << p) <= nr; p++) {
+        int pos = 1 << p, cnt = 0;
+        for (int i = 1; i <= nr; i++)
+            if (i & pos) cnt += rc[i];
+        if (cnt & 1) error += pos;
+    }
+
+    if (!error) {
+        cout << "No error detected.\n";
+    } else {
+        cout << "Error at bit: " << error << "\n";
+        rc[error] ^= 1;
+
+        cout << "Corrected codeword: ";
+        for (int i = nr; i >= 1; i--) cout << rc[i];
+        cout << "\n";
+    }
+
+    return 0;
+}
+
+
+4]
+stop_and_wait
+#include <bits/stdc++.h>
+
+using namespace std;
+
+int main() {
+    
+    cout << "--- Sender Side ---\n";
+    vector<int> frames = {1, 2, 3, 4, 5};
+    srand(time(nullptr));
+    
+    cout << "\nSender has to send frames: ";
+    for (int i = 0; i < frames.size(); i++)
+        cout << frames[i] << " ";
+    cout << endl;
+    
+    cout << "\n--- Receiver Side ---\n";
+    int count = 0;
+    cout << "\n" << string(50, '=') << endl;
+    cout << "\tSENDER\t\t\tRECEIVER" << endl;
+    cout << string(50, '=') << endl;
+    
+    while (count != frames.size()) {
+        cout << "\n[" << (count + 1) << "] Sending Frame " << frames[count] << "...";
+        
+        if (rand() % 2) {
+            cout << "\t\tFrame " << frames[count] << " received";
+            cout << "\n    Waiting for ACK...\t\tACK " << frames[count] << " sent\n";
+            count++;
+        } else {
+            cout << "\t\tFrame LOST";
+            cout << "\n    Timeout! Retransmitting...\tNo response\n";
+        }
+        cout << string(50, '-') << endl;
+    };
+    
+    cout << "\nAll frames transmitted successfully!\n";
+
+    return 0;
+}
+go_back_and
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+using namespace std;
+
+int main() {
+    int n, w, total = 0;
+    cout << "Frames: ";
+    cin >> n;
+    cout << "Window size: ";
+    cin >> w;
+
+    srand(time(0));
+    int i = 1;
+
+    while (i <= n) {
+        int ok = 0;
+
+        cout << "\nSending: ";
+        for (int j = i; j < i + w && j <= n; j++) {
+            cout << j << " ";
+            total++;
+        }
+        cout << "\n";
+
+        for (int j = i; j < i + w && j <= n; j++) {
+            cout << "Frame " << j << ": ";
+            if (rand() % 2) {
+                cout << "ACK\n";
+                ok++;
+            } else {
+                cout << "LOST\n";
+                cout << "Going back to frame " << j << "\n";
+                break;
+            }
+        }
+
+        i += ok;
+    }
+
+    cout << "\nAll frames transmitted.\n";
+    cout << "Total transmissions: " << total << "\n";
+    return 0;
+}
+
+select_repeat
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    int n, w;
+    cout << "Frames: ";  cin >> n;
+    cout << "Window: "; cin >> w;
+
+    srand(time(NULL));
+
+    vector<bool> recv(n+1, false), ack(n+1, false);
+    int next = 1, win = 1, tx = 0;
+
+    while (win <= n) {
+
+        // Send window
+        for (int i = win; i < win + w && i <= n; i++) {
+            if (!ack[i]) {
+                cout << "Send " << i << " ";
+                tx++;
+            }
+        }
+        cout << "\n";
+
+        // Random ACK / Loss
+        for (int i = win; i < win + w && i <= n; i++) {
+            if (!ack[i]) {
+                if (rand() % 2) {
+                    cout << "ACK " << i << "\n";
+                    recv[i] = ack[i] = true;
+                } else {
+                    cout << "LOSS " << i << "\n";
+                }
+            }
+        }
+
+        // Deliver in-order
+        cout << "Deliver: ";
+        while (next <= n && recv[next]) {
+            cout << next << " ";
+            next++;
+        }
+        cout << "\n";
+
+        // Slide window
+        while (win <= n && ack[win]) win++;
+    }
+
+    cout << "\nAll frames delivered.\nTotal transmissions: " << tx;
+}
+
+
+5]
+subnet_calculator
+#include <iostream>
+#include <cstdio>
+using namespace std;
+
+int main() {
+    int ip[4], m[4];
+    string a, b; 
+    cin >> a >> b;
+
+    sscanf(a.c_str(), "%d.%d.%d.%d", &ip[0], &ip[1], &ip[2], &ip[3]);
+    sscanf(b.c_str(), "%d.%d.%d.%d", &m[0], &m[1], &m[2], &m[3]);
+
+    int ipd=0, md=0;
+    for(int i=0;i<4;i++){
+        ipd=(ipd<<8)+ip[i];
+        md=(md<<8)+m[i];
+    }
+
+    int p=0;
+    for(int i=31;i>=0;i--) if((md>>i)&1) p++;
+
+    int net = ipd & md;
+    int brd = net | (~md);
+
+    auto pr=[&](int v){
+        cout<<((v>>24)&255)<<"."<<((v>>16)&255)<<"."
+            <<((v>>8)&255)<<"."<<(v&255)<<"\n";
+    };
+
+    cout<<"Prefix /"<<p<<"\nNetwork: "; pr(net);
+    cout<<"Broadcast: "; pr(brd);
+
+    int hb = 32 - p;
+    if(hb>0){
+        cout<<"First: "; pr(net+1);
+        cout<<"Last: "; pr(brd-1);
+        cout<<"Hosts: "<<((1LL<<hb)-2)<<"\n";
+    }
+}
+
+
+6]
+distance_vector
+void distanceVector(int n, int cost[MAX][MAX], int hop[MAX][MAX]) {
+    bool changed;
+
+    do {
+        changed = false;
+
+        for (int src = 0; src < n; src++) {
+            for (int dest = 0; dest < n; dest++) {
+                for (int via = 0; via < n; via++) {
+                    if (cost[src][dest] > cost[src][via] + cost[via][dest]) {
+                        cost[src][dest] = cost[src][via] + cost[via][dest];
+                        hop[src][dest] = hop[src][via];
+                        changed = true;
+                    }
+                }
+            }
+        }
+    } while (changed);
+}
+
+link state
+
+#include <iostream>
+using namespace std;
+
+const int INF = 999;
+const int MAX = 10;
+
+int main() {
+    int n, cost[MAX][MAX];
+    
+    cout << "Enter number of routers: ";
+    cin >> n;
+
+    cout << "Enter cost matrix (999 = no link):\n";
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++) {
+            cin >> cost[i][j];
+            if (i == j) cost[i][j] = 0;
+        }
+
+    cout << "\n=== Link State Routing (Dijkstra) ===\n";
+
+    for (int src = 0; src < n; src++) {
+
+        int dist[MAX], visited[MAX], nextHop[MAX];
+
+        // Initialize distance and hop
+        for (int i = 0; i < n; i++) {
+            dist[i] = cost[src][i];
+            visited[i] = 0;
+            nextHop[i] = (dist[i] < INF && i != src) ? i : -1;
+        }
+
+        visited[src] = 1;
+
+        // Dijkstra core
+        for (int k = 0; k < n - 1; k++) {
+            int u = -1, best = INF;
+
+            for (int i = 0; i < n; i++)
+                if (!visited[i] && dist[i] < best)
+                    best = dist[i], u = i;
+
+            if (u == -1) break;
+            visited[u] = 1;
+
+            for (int v = 0; v < n; v++)
+                if (!visited[v] && cost[u][v] < INF &&
+                    dist[u] + cost[u][v] < dist[v]) {
+
+                    dist[v] = dist[u] + cost[u][v];
+                    nextHop[v] = nextHop[u];
+                }
+        }
+
+        // Print table for this router
+        cout << "\nRouter " << src+1 << " Routing Table:\n";
+        cout << "Dest\tNextHop\tCost\n";
+        for (int d = 0; d < n; d++)
+            if (d != src)
+                cout << d+1 << "\t" << nextHop[d]+1 << "\t" << dist[d] << endl;
+    }
+
+    return 0;
+}
+
+7]
+tcp client
+#include <bits/stdc++.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+
+using namespace std;
+
+int main() {
+    int client_socket;
+    sockaddr_in server_address;
+    
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(8080);
+    server_address.sin_addr.s_addr = INADDR_ANY;
+    
+    connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address));
+    
+    const char *message = "Hello, TCP Server!";
+    send(client_socket, message, strlen(message), 0);
+    
+    char buffer[1024] = {0};
+    read(client_socket, buffer, sizeof(buffer));
+    cout << "Server replied: " << buffer << endl;
+    
+    close(client_socket);
+    
+    return 0;
+}
+
+tcp server
+#include <bits/stdc++.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+
+using namespace std;
+
+int main() {
+    int server_socket, client_socket;
+    sockaddr_in server_address, client_address;
+    socklen_t client_length;
+    
+   server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(8080);
+    server_address.sin_addr.s_addr = INADDR_ANY;
+    
+    bind(server_socket, (struct sockaddr *)&server_address, sizeof(server_address));
+    listen(server_socket, 5);
+    
+    cout << "Server listening on port 8080..." << endl;
+    
+    client_length = sizeof(client_address);
+    client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_length);
+     char buffer[1024] = {0};
+    read(client_socket, buffer, sizeof(buffer));
+    cout << "Received: " << buffer << endl;
+    send(client_socket, buffer, strlen(buffer), 0);
+    
+    close(client_socket);
+    close(server_socket);
+    
+    return 0;
+}
+udp client
+
+#include <bits/stdc++.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+using namespace std;
+
+int main() {
+    int sock;
+    sockaddr_in server_addr;
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        return 1;
+    }
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    if (inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr) != 1) {
+        perror("inet_pton");
+        close(sock);
+        return 1;
+    }
+
+    const char *msg = "Hello, UDP Server!";
+
+    ssize_t sent = sendto(sock, msg, strlen(msg), 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    if (sent < 0) {
+        perror("sendto");
+        close(sock);
+        return 1;
+    }
+    char buf[1024];
+    sockaddr_in from_addr;
+    socklen_t from_len = sizeof(from_addr);
+    ssize_t n = recvfrom(sock, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&from_addr, &from_len);
+    if (n < 0) {
+        perror("recvfrom");
+        close(sock);
+        return 1;
+    }
+    buf[n] = '\0';
+    cout << "Server replied: " << buf << endl;
+
+    close(sock);
+    return 0;
+}
+
+udp server
+
+#include <bits/stdc++.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+
+using namespace std;
+
+int main() {
+    int sock;
+    sockaddr_in addr;
+    socklen_t addrlen = sizeof(addr);
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        return 1;
+    }
+     addr.sin_family = AF_INET;
+    addr.sin_port = htons(8080);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) ;
+
+    cout << "UDP server listening on port 8080..." << endl;
+    char buf[1024];
+    ssize_t n = recvfrom(sock, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&addr, &addrlen);
+    if (n < 0) {
+        perror("recvfrom");
+        close(sock);
+        return 1;
+    }
+
+    buf[n] = '\0';
+    cout << "Received: " << buf << endl;
+     if (sendto(sock, buf, n, 0, (struct sockaddr *)&addr, addrlen) < 0) {
+        perror("sendto");
+    }
+
+    close(sock);
+    return 0;
+}
